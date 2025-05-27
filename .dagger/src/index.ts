@@ -6,6 +6,8 @@ import {
 	Container,
 	dag,
 } from "@dagger.io/dagger";
+/** @ts-ignore */
+import * as crypto from "crypto"
 
 @object()
 export class DaggerPlayground {
@@ -29,10 +31,13 @@ export class DaggerPlayground {
 		this.dir = dir;
 	}
 
-	private env(): Container {
+	private async env(): Promise<Container> {
+		const lockfile = await this.dir.file("composer.lock").contents()
+    const lockHash = crypto.createHash("sha256").update(lockfile).digest("hex").slice(0, 12)
+
 		return this.dir.dockerBuild()
 			.withMountedDirectory("/var/www", this.dir)
-			.withMountedCache("/var/www/vendor", dag.cacheVolume("vendor"))
+			.withMountedCache("/var/www/vendor", dag.cacheVolume(`vendor-${lockHash}`))
 			.withExec(['composer', 'install', '--no-interaction', '--prefer-dist'])
 	}
 
@@ -41,7 +46,7 @@ export class DaggerPlayground {
 	 */
 	@func()
 	async inspect(): Promise<Container> {
-		return this.env()
+		return (await this.env())
 			.withWorkdir("/var/www")
 			.terminal()
 	}
@@ -50,7 +55,7 @@ export class DaggerPlayground {
 	 */
 	@func()
 	async test(): Promise<string> {
-		return this.env()
+		return (await this.env())
 			.withExec(['php', 'artisan', 'test'])
 			.stdout();
 	}
@@ -60,7 +65,7 @@ export class DaggerPlayground {
 	 */
 	@func()
 	async lint(): Promise<string> {
-		return this.env()
+		return (await this.env())
 			.withExec(['./vendor/bin/pint', '--test'])
 			.stdout()
 	}
