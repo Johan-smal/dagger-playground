@@ -3,5 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: dev-stage
     volumes:
       - .:/var/www

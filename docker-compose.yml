@@ -12,3 +12,9 @@ services:
     extends:
       file: ./app/docker-compose.yml
       service: php
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - XDEBUG_MODE=develop,debug
+    volumes:
+      - ./.docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
