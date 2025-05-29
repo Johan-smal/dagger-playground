@@ -6,7 +6,6 @@ import {
 	Container,
 	dag,
 } from "@dagger.io/dagger";
-/** @ts-ignore */
 import * as crypto from "crypto"
 
 @object()
@@ -35,7 +34,7 @@ export class DaggerPlayground {
 		const lockfile = await this.dir.file("composer.lock").contents()
     const lockHash = crypto.createHash("sha256").update(lockfile).digest("hex").slice(0, 12)
 
-		return this.dir.dockerBuild()
+		return this.dir.dockerBuild({ target: "base"})
 			.withMountedDirectory("/var/www", this.dir)
 			.withMountedCache("/var/www/vendor", dag.cacheVolume(`vendor-${lockHash}`))
 			.withExec(['composer', 'install', '--no-interaction', '--prefer-dist'])
