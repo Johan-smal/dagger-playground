@@ -1,28 +1,29 @@
-FROM php:8.2-fpm as base
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git curl unzip zip libzip-dev libpng-dev libonig-dev libxml2-dev \
-    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath
-
-# Install Composer globally
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
+FROM php:8.2-fpm-alpine as base
+RUN apk add --no-cache \
+    git curl unzip zip libzip-dev libpng-dev libxml2-dev oniguruma-dev \
+    && docker-php-ext-install mbstring bcmath pcntl
 WORKDIR /var/www
 
+# --- Development stages with Composer ---
 FROM base as dev-stage
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS linux-headers \
+    && pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    && apk del .build-deps
+CMD ["php-fpm"]
 
-# Install development dependencies
-RUN apt-get update && apt-get install -y \
-    libzip-dev \
-    && docker-php-ext-install zip
+# --- CICD stage for Composer dependencies ---
+FROM base as cicd-stage
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install Xdebug directly using pecl
-RUN pecl install xdebug \
-    && docker-php-ext-enable xdebug
+# --- Build stage for production dependencies ---
+FROM base as build
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY . .
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
-# Install additional PHP extensions
-RUN docker-php-ext-install gd
-
-# PHP-FPM runs by default
+# --- Production stages (no Composer, only vendor) ---
+FROM base as prod-stage
+COPY --from=build /var/www /var/www
 CMD ["php-fpm"]

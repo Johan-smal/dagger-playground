@@ -4,7 +4,10 @@ import {
 	func,
 	argument,
 	Container,
-	dag
+	dag,
+	File,
+	Secret,
+	Platform
 } from "@dagger.io/dagger";
 import * as crypto from "crypto"
 
@@ -12,6 +15,8 @@ import * as crypto from "crypto"
 export class DaggerPlayground {
 	appDir: Directory;
 	infraDir: Directory;
+	credentials: File;
+	config: File;
 
 	/**
 	 * Create a new DaggerPlayground instance.
@@ -24,6 +29,7 @@ export class DaggerPlayground {
 			defaultPath: "/app",
 			ignore: [
 				'vendor',
+				'.env',
 				'docker-compose.yml',
 			]
 		}) appDir: Directory,
@@ -33,32 +39,62 @@ export class DaggerPlayground {
 				'.terraform',
 			]
 		}) infraDir: Directory,
+		@argument({
+			defaultPath: "/credentials"
+		}) credentials: File,
+		@argument({
+			defaultPath: "/config"
+		}) config: File
 	) {
 		this.appDir = appDir;
 		this.infraDir = infraDir;
+		this.credentials = credentials;
+		this.config = config;
 	}
 
-	private async appEnv(): Promise<Container> {
+	private async appEnv(
+		{ target, platform }: { 
+			target: 'base' | 'prod-stage', 
+			platform?: Platform 
+		} = { target: "base" }): Promise<Container> {
 		const lockfile = await this.appDir.file("composer.lock").contents()
     const lockHash = crypto.createHash("sha256").update(lockfile).digest("hex").slice(0, 12)
-
-		return this.appDir.dockerBuild({ target: "base"})
+		const installCommand = target === "base" ? 
+				['composer', 'install', '--no-interaction', '--prefer-dist'] : ['ls', '-la'];
+		return this.appDir.dockerBuild({ target, platform })
 			.withMountedDirectory("/var/www", this.appDir)
-			.withMountedCache("/var/www/vendor", dag.cacheVolume(`vendor-${lockHash}`))
-			.withExec(['composer', 'install', '--no-interaction', '--prefer-dist'])
+			.withMountedCache("/var/www/vendor", dag.cacheVolume(`vendor-${target}-${lockHash}`))
+			.withExec(installCommand)
 	}
 
 	private async infraEnv(): Promise<Container> {
-		await this.loadEnvironmentVariables(this.infraDir);
-		return this.withAwsCredentials(dag.container())
+		return dag.container()
 				.from("hashicorp/terraform:1.12.1")
 				.withMountedDirectory("/infra", this.infraDir)
+				.withMountedSecret("/root/.aws/credentials", dag.setSecret("AWS_CREDENTIALS", await this.credentials.contents()))
 				.withWorkdir("/infra")
 				.withMountedCache("/infra/.terraform", dag.cacheVolume("terraform"))
 				.withExec([
 					'terraform', 'init',
 					`--backend-config=backend.tfvars`,
 				])
+	}
+
+	private async awsCliEnv(): Promise<Container> {
+		return dag.container()
+			.from("public.ecr.aws/aws-cli/aws-cli:latest")
+			.withFile("/root/.aws/config", this.config)
+			.withMountedSecret("/root/.aws/credentials", dag.setSecret("AWS_CREDENTIALS", await this.credentials.contents()))
+	}
+
+	private async awsAccountId(ctx?: Container): Promise<string> {
+		const awsCli = ctx ?? await this.awsCliEnv();
+		return (await awsCli.withExec(['aws', 'sts', 'get-caller-identity']).stdout()).match(/"Account": "(\d+)"/)?.[1] ?? "";
+	}
+
+	private async ecrLoginPassword(ctx?: Container): Promise<Secret> {
+		const awsCli = ctx ?? await this.awsCliEnv();
+		return dag.setSecret("ECR_LOGIN_PASSWORD", await awsCli.withExec(['aws', 'ecr', 'get-login-password']).stdout());
 	}
 
 	private async loadEnvironmentVariables(dir: Directory, target = ".env"): Promise<void> {
@@ -70,12 +106,6 @@ export class DaggerPlayground {
 				Bun.env[key] = value;
 			}
 		}
-	}
-
-	private withAwsCredentials(container: Container): Container {
-		return container
-			.withSecretVariable("AWS_ACCESS_KEY_ID", dag.setSecret("AWS_ACCESS_KEY_ID", Bun.env.AWS_ACCESS_KEY_ID || ""))
-			.withSecretVariable("AWS_SECRET_ACCESS_KEY", dag.setSecret("AWS_SECRET_ACCESS_KEY", Bun.env.AWS_SECRET_ACCESS_KEY || ""));
 	}
 
 	/**
@@ -91,8 +121,8 @@ export class DaggerPlayground {
 	 * Run app tests
 	 */
 	@func()
-	async test(): Promise<string> {
-		return (await this.appEnv())
+	async test(ctr?: Container): Promise<string> {
+		return (ctr ?? await this.appEnv())
 			.withExec(['php', 'artisan', 'test'])
 			.stdout();
 	}
@@ -101,12 +131,36 @@ export class DaggerPlayground {
 	 * Run app linter
 	 */
 	@func()
-	async lint(): Promise<string> {
-		return (await this.appEnv())
+	async lint(ctr?: Container): Promise<string> {
+		return (ctr ?? await this.appEnv())
 			.withExec(['./vendor/bin/pint', '--test'])
 			.stdout()
 	}
 
+	@func()
+	async push() {
+		const awsCli = await this.awsCliEnv();
+		const [ctx, ecrLoginPassword, awsAccountId] = await Promise.all([
+			this.appEnv({ target: "prod-stage", platform: "linux/amd64" as Platform }),
+			this.ecrLoginPassword(awsCli),
+			this.awsAccountId(awsCli)
+		]);
+		
+		ctx.withRegistryAuth(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com`, "AWS", ecrLoginPassword)
+			.publish(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com/app:latest`)
+	}
+
+	/**
+	 * Pre-build steps
+	 */
+	@func()
+	async prebuild(): Promise<string[]> {
+		const appEnv = await this.appEnv();
+		return await Promise.all([
+			this.test(appEnv),
+			this.lint(appEnv),
+		])
+	}
 	/**
 	 * Terraform container
 	 */

@@ -15,10 +15,13 @@ provider "aws" {
   region = var.aws_region
 }
 
-resource "null_resource" "example" {
-  # This is just a placeholder resource to ensure the provider is initialized
-  # and to avoid any issues with empty configurations.
-  provisioner "local-exec" {
-    command = "echo 'AWS provider initialized successfully.'"
-  }
+module "tools" {
+  source = "./modules/tools"
+}
+
+module "app" {
+  source     = "./modules/app"
+  app_ecr    = module.tools.app_ecr
+  aws_region = var.aws_region
+  depends_on = [module.tools]
 }
