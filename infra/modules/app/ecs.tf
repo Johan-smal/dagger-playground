@@ -22,3 +22,21 @@ resource "aws_ecs_service" "app_service" {
     aws_iam_role.ecs_task_execution
   ]
 }
+
+resource "aws_ecs_service" "redis" {
+  name            = "redis"
+  cluster         = aws_ecs_cluster.app_cluster.id
+  task_definition = aws_ecs_task_definition.redis.arn
+  launch_type     = "FARGATE"
+  desired_count   = 1
+
+  network_configuration {
+    subnets          = data.aws_subnets.default.ids
+    security_groups  = [aws_security_group.app_sg.id]
+    assign_public_ip = true
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.redis.arn
+  }
+}

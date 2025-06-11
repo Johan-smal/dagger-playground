@@ -7,3 +7,8 @@ variable "app_ecr" {
     repository_url = string
   })
 }
+
+variable "app_key" {
+  type        = string
+  description = "Base64 encoded application key for Laravel"
+}

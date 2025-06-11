@@ -54,12 +54,12 @@ export class DaggerPlayground {
 
 	private async appEnv(
 		{ target, platform }: { 
-			target: 'base' | 'prod-stage', 
+			target: 'cicd-stage' | 'prod-stage', 
 			platform?: Platform 
-		} = { target: "base" }): Promise<Container> {
+		} = { target: "cicd-stage" }): Promise<Container> {
 		const lockfile = await this.appDir.file("composer.lock").contents()
     const lockHash = crypto.createHash("sha256").update(lockfile).digest("hex").slice(0, 12)
-		const installCommand = target === "base" ? 
+		const installCommand = target === "cicd-stage" ? 
 				['composer', 'install', '--no-interaction', '--prefer-dist'] : ['ls', '-la'];
 		return this.appDir.dockerBuild({ target, platform })
 			.withMountedDirectory("/var/www", this.appDir)
