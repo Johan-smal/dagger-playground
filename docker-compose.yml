@@ -8,21 +8,40 @@ services:
   #   depends_on:
   #     - app
 
+  caddy:
+    image: caddy:latest
+    volumes:
+      - ./.docker/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    depends_on:
+      - app
+
   app:
     extends:
       file: ./app/docker-compose.yml
       service: php
-    command: php artisan serve --port=80 --host=0.0.0
+    # command: php artisan serve --port=80 --host=0.0.0
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       - XDEBUG_MODE=develop,debug
     volumes:
       - ./.docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
-    ports:
-      - 80:80
+    # ports:
+    #   - 80:80
 
   redis:
     image: redis:alpine
     ports:
       - 6379:6379
+
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
