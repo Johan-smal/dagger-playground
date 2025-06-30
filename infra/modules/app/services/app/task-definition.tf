@@ -6,6 +6,7 @@ resource "aws_ecs_task_definition" "app" {
   memory                   = "512"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
+  track_latest             = true
 
   # Uncomment the following lines if you want to specify a specific runtime platform
   runtime_platform {
@@ -20,7 +21,7 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = jsonencode([
     {
       name      = "php"
-      image     = "${var.app_ecr.repository_url}:latest"
+      image     = "${var.app_ecr.repository_url}:${aws_ssm_parameter.app_container_tag.value}"
       essential = true
       command   = ["php", "artisan", "serve", "--port=80", "--host=0.0.0"]
       environment = [
@@ -56,7 +57,7 @@ resource "aws_ecs_task_definition" "app" {
       ]
       }, {
       name      = "supervisor"
-      image     = "${var.app_ecr.repository_url}:latest"
+      image     = "${var.app_ecr.repository_url}:${aws_ssm_parameter.app_container_tag.value}"
       essential = false
       command   = ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
       environment = [
@@ -87,9 +88,6 @@ resource "aws_ecs_task_definition" "app" {
       name      = "fluent"
       image     = "amazon/aws-for-fluent-bit:latest"
       essential = false
-      environment = [
-        { name = "aws_fluent_bit_init_s3_1", value = aws_s3_object.fluent.arn }
-      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {

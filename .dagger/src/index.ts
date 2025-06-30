@@ -154,19 +154,6 @@ export class DaggerPlayground {
 			.stdout()
 	}
 
-	@func()
-	async push(): Promise<string> {
-		const awsCli = await this.awsCliEnv();
-		const [ctx, ecrLoginPassword, awsAccountId] = await Promise.all([
-			this.appEnv({ target: "prod-stage", /* platform: "linux/amd64" as Platform */ }),
-			this.ecrLoginPassword(awsCli),
-			this.awsAccountId(awsCli)
-		]);
-		
-		return ctx.withRegistryAuth(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com`, "AWS", ecrLoginPassword)
-			.publish(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com/app:latest`)
-	}
-
 	/**
 	 * Pre-build steps
 	 */
@@ -178,6 +165,88 @@ export class DaggerPlayground {
 			this.lint(appEnv),
 		])
 	}
+
+	@func()
+	async push(tag: string = "latest"): Promise<string> {
+		const awsCli = await this.awsCliEnv();
+		const [ctx, ecrLoginPassword, awsAccountId] = await Promise.all([
+			this.appEnv({ target: "prod-stage", /* platform: "linux/amd64" as Platform */ }),
+			this.ecrLoginPassword(awsCli),
+			this.awsAccountId(awsCli)
+		]);
+		
+		return ctx.withRegistryAuth(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com`, "AWS", ecrLoginPassword)
+			.publish(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com/app:${tag}`)
+	}
+
+	@func()
+	async deploy(tag: string = "latest"): Promise<string> {
+		const awsCli = await this.awsCliEnv();
+		const [awsAccountId] = await Promise.all([
+			this.awsAccountId(awsCli),
+		]);
+
+		const clusterName = "app-cluster";  
+		const serviceName = "app-service";     
+		const family = "app-task";             
+
+		// 1. Get the current task definition JSON
+		const describeTaskDef = await awsCli.withExec([
+			'aws', 'ecs', 'describe-task-definition',
+			'--task-definition', family,
+			'--query', 'taskDefinition',
+		]).stdout();
+
+		// Parse JSON to modify container image
+  	const taskDef = JSON.parse(describeTaskDef);
+
+		// Update container image in the containerDefinitions array
+		for (const container of taskDef.containerDefinitions) {
+			if (["php", "supervisor"].includes(container.name)) {  // replace with your container name
+				container.image = `${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com/app:${tag}`;
+			}
+		}
+
+		// Remove unnecessary fields before registering new task def (like status, revision)
+		delete taskDef.status;
+		delete taskDef.revision;
+		delete taskDef.taskDefinitionArn;
+		delete taskDef.requiresAttributes;
+		delete taskDef.compatibilities;
+		delete taskDef.registeredAt;
+		delete taskDef.registeredBy;
+
+		const awsCliDeploy = await this.awsCliEnv();
+		const containerWithFile = awsCliDeploy.withNewFile('/tmp/new-task-def.json', JSON.stringify(taskDef))
+
+		// Register new task definition and capture ARN
+		const newTaskDefArn = await containerWithFile.withExec([
+			'aws', 'ecs', 'register-task-definition',
+			'--cli-input-json', 'file:///tmp/new-task-def.json',
+			'--query', 'taskDefinition.taskDefinitionArn',
+			'--output', 'text'
+		]).stdout();
+
+		// 3. Update ECS service to use new task definition
+		const updateServiceOutput = await awsCliDeploy.withExec([
+			'aws', 'ecs', 'update-service',
+			'--cluster', clusterName,
+			'--service', serviceName,
+			'--task-definition', newTaskDefArn.trim()
+		]).stdout();
+
+		// 4. Update Parameter Store with new container tag
+		const ssmParaterUpdate = await awsCli.withExec([
+			'aws', 'ssm', 'put-parameter',
+			'--name', '/app/container/tag',
+			'--value', tag,
+			'--type', 'String',
+			'--overwrite'
+		]).stdout();
+
+		return [updateServiceOutput, ssmParaterUpdate].join("\n");
+	}
+
 	/**
 	 * Terraform container
 	 */
