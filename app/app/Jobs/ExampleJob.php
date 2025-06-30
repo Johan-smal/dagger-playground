@@ -24,6 +24,8 @@ class ExampleJob implements ShouldQueue
     public function handle(): void
     {
         // log message
+        // sleep random time between 5 and 15 seconds
+        sleep(rand(5, 15));
         Log::info('ExampleJob is being processed.');
     }
 }

@@ -35,6 +35,19 @@ services:
     # ports:
     #   - 80:80
 
+  supervisor:
+    extends:
+      file: ./app/docker-compose.yml
+      service: php
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: supervisord -c /etc/supervisor/conf.d/supervisord.conf
+    environment:
+      - XDEBUG_MODE=develop,debug
+    volumes:
+      - ./.docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+      - ./.docker/supervisor/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
+
   redis:
     image: redis:alpine
     ports:

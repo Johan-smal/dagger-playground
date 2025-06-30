@@ -52,7 +52,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'stdout')),
+            'channels' => explode(',', env('LOG_STACK', 'single')),
             'ignore_exceptions' => false,
         ],
 
@@ -60,6 +60,16 @@ return [
             'driver' => 'single',
             'path' => 'php://stdout',
             'level' => env('LOG_LEVEL', 'info'),
+        ],
+
+        'single' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/laravel.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'formatter' => env('LOG_SINGLE_FORMATTER'),
+            'formatter_with' => [
+                'dateFormat' => env('LOG_DATE_FORMAT', 'Y-m-d H:i:s'),
+            ],
         ],
 
         'stderr' => [

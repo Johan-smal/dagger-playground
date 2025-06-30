@@ -17,6 +17,7 @@ export class DaggerPlayground {
 	infraDir: Directory;
 	credentials: File;
 	config: File;
+	supervisor: File;
 
 	/**
 	 * Create a new DaggerPlayground instance.
@@ -44,12 +45,16 @@ export class DaggerPlayground {
 		}) credentials: File,
 		@argument({
 			defaultPath: "/config"
-		}) config: File
+		}) config: File,
+		@argument({
+			defaultPath: "/.docker/supervisor/supervisord.conf",
+		}) supervisor: File 
 	) {
 		this.appDir = appDir;
 		this.infraDir = infraDir;
 		this.credentials = credentials;
 		this.config = config;
+		this.supervisor = supervisor;
 	}
 
 	private async appEnv(
@@ -59,12 +64,24 @@ export class DaggerPlayground {
 		} = { target: "cicd-stage" }): Promise<Container> {
 		const lockfile = await this.appDir.file("composer.lock").contents()
     const lockHash = crypto.createHash("sha256").update(lockfile).digest("hex").slice(0, 12)
-		const installCommand = target === "cicd-stage" ? 
-				['composer', 'install', '--no-interaction', '--prefer-dist'] : ['ls', '-la'];
-		return this.appDir.dockerBuild({ target, platform })
-			.withMountedDirectory("/var/www", this.appDir)
-			.withMountedCache("/var/www/vendor", dag.cacheVolume(`vendor-${target}-${lockHash}`))
-			.withExec(installCommand)
+
+		return this.appDir
+			.with((dir) => {
+				if (target === "prod-stage") {
+					return dir.withFile("supervisord.conf", this.supervisor)
+				}
+				return dir
+			})
+			.dockerBuild({ target, platform })
+				.with((ctx) => {
+					if (target === "prod-stage") {
+						return ctx.withMountedFile("/etc/supervisor/conf.d/supervisord.conf", this.supervisor)
+					}
+					return ctx
+						.withMountedDirectory("/var/www", this.appDir)
+						.withMountedCache("/var/www/vendor", dag.cacheVolume(`vendor-${target}-${lockHash}`))
+						.withExec(['composer', 'install', '--no-interaction', '--prefer-dist']);
+				})
 	}
 
 	private async infraEnv(): Promise<Container> {
@@ -138,15 +155,15 @@ export class DaggerPlayground {
 	}
 
 	@func()
-	async push() {
+	async push(): Promise<string> {
 		const awsCli = await this.awsCliEnv();
 		const [ctx, ecrLoginPassword, awsAccountId] = await Promise.all([
-			this.appEnv({ target: "prod-stage", platform: "linux/amd64" as Platform }),
+			this.appEnv({ target: "prod-stage", /* platform: "linux/amd64" as Platform */ }),
 			this.ecrLoginPassword(awsCli),
 			this.awsAccountId(awsCli)
 		]);
 		
-		ctx.withRegistryAuth(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com`, "AWS", ecrLoginPassword)
+		return ctx.withRegistryAuth(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com`, "AWS", ecrLoginPassword)
 			.publish(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com/app:latest`)
 	}
 
@@ -174,9 +191,9 @@ export class DaggerPlayground {
 	 * Run terraform plan
 	 */
 	@func()
-	async plan(): Promise<string> {
+	async plan(target?: string): Promise<string> {
 		return (await this.infraEnv())
-			.withExec(['terraform', 'plan'])
+			.withExec([...['terraform', 'plan'], ...(target ? [`-target=module.${target}`] : [])])
 			.stdout();
 	}
 }

@@ -3,7 +3,8 @@ RUN apk add --no-cache $PHPIZE_DEPS linux-headers \
     git curl unzip zip libzip-dev libpng-dev libxml2-dev oniguruma-dev \
     && docker-php-ext-install mbstring bcmath pcntl opcache \
     && pecl install redis \
-    && docker-php-ext-enable redis
+    && docker-php-ext-enable redis \
+    && apk add --no-cache supervisor
 
 WORKDIR /var/www
 
@@ -25,8 +26,8 @@ FROM base AS build
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY . .
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
-
 # --- Production stages (no Composer, only vendor) ---
 FROM base AS prod-stage
 COPY --from=build /var/www /var/www
+COPY --from=build /var/www/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 CMD ["php-fpm"]
