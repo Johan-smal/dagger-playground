@@ -19,8 +19,8 @@ module "tools" {
   source = "./modules/tools"
 }
 
-module "app" {
-  source     = "./modules/app"
+module "platform" {
+  source     = "./modules/platform"
   app_ecr    = module.tools.app_ecr
   aws_region = var.aws_region
   app_key    = var.app_key
