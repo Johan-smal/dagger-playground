@@ -15,6 +15,11 @@ variable "vpc_id" {
   description = "The VPC ID where the ECS service will be deployed."
   type        = string
 }
+variable "service_discovery_private_dns_namespace" {
+  type = object({
+    id = string
+  })
+}
 variable "app_key_secret_arn" {
   description = "The ARN of the AWS Secrets Manager secret containing the application key."
   type        = string

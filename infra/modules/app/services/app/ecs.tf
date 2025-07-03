@@ -13,6 +13,11 @@ resource "aws_ecs_service" "app_service" {
     assign_public_ip = true
   }
 
+  service_registries {
+    registry_arn = aws_service_discovery_service.php.arn
+    port         = 80
+  }
+
   depends_on = [
     aws_iam_role_policy_attachment.ecs_task_execution_policy,
     aws_iam_role.ecs_task_role,
