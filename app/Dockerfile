@@ -6,6 +6,8 @@ RUN apk add --no-cache $PHPIZE_DEPS linux-headers \
     && docker-php-ext-enable redis \
     && apk add --no-cache supervisor
 
+RUN mkdir -p /var/log/supervisor
+
 WORKDIR /var/www
 
 # --- Development stages with Composer ---
