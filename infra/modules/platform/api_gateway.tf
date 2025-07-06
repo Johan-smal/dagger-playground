@@ -28,7 +28,7 @@ resource "aws_apigatewayv2_integration" "api_integration" {
   integration_method = "ANY"
   connection_type    = "VPC_LINK"
   connection_id      = aws_apigatewayv2_vpc_link.api_vpc_link.id
-  integration_uri    = module.app.app_discover_service.arn # via Cloud Map DNS
+  integration_uri    = module.laravel.laravel_discover_service.arn # via Cloud Map DNS
 }
 
 resource "aws_apigatewayv2_route" "api_route" {

@@ -1,5 +1,5 @@
-resource "aws_security_group" "app_sg" {
-  name        = "app-sg"
+resource "aws_security_group" "laravel_sg" {
+  name        = "laravel-sg"
   description = "Allow HTTP, HTTPS, and SSH inbound; all outbound"
   vpc_id      = var.vpc_id
 

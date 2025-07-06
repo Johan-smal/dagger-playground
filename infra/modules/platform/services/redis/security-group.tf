@@ -6,7 +6,7 @@ resource "aws_security_group" "redis_sg" {
     from_port       = 6379
     to_port         = 6379
     protocol        = "tcp"
-    security_groups = [var.app_sg.id]
+    security_groups = [var.laravel_sg.id]
   }
 
   egress {

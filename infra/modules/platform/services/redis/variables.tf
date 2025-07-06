@@ -20,7 +20,7 @@ variable "service_discovery_private_dns_namespace" {
     id = string
   })
 }
-variable "app_sg" {
+variable "laravel_sg" {
   type = object({
     id = string
   })

@@ -13,7 +13,7 @@ import * as crypto from "crypto"
 
 @object()
 export class DaggerPlayground {
-	appDir: Directory;
+	laravelDir: Directory;
 	infraDir: Directory;
 	credentials: File;
 	config: File;
@@ -22,18 +22,18 @@ export class DaggerPlayground {
 	/**
 	 * Create a new DaggerPlayground instance.
 	 *
-	 * @param appDir - The directory to use for the DaggerPlayground instance.
-	 *              Defaults to "/app" and ignores certain files and directories.
+	 * @param laravelDir - The directory to use for the Laravel app.
+	 *              Defaults to "/apps/laravel" and ignores certain files and directories.
 	 */
 	constructor(
 		@argument({ 
-			defaultPath: "/app",
+			defaultPath: "/apps/laravel",
 			ignore: [
 				'vendor',
 				'.env',
 				'docker-compose.yml',
 			]
-		}) appDir: Directory,
+		}) laravelDir: Directory,
 		@argument({ 
 			defaultPath: "/infra",
 			ignore: [
@@ -50,7 +50,7 @@ export class DaggerPlayground {
 			defaultPath: "/.docker/supervisor/supervisord.conf",
 		}) supervisor: File 
 	) {
-		this.appDir = appDir;
+		this.laravelDir = laravelDir;
 		this.infraDir = infraDir;
 		this.credentials = credentials;
 		this.config = config;
@@ -62,10 +62,10 @@ export class DaggerPlayground {
 			target: 'cicd-stage' | 'prod-stage', 
 			platform?: Platform 
 		} = { target: "cicd-stage" }): Promise<Container> {
-		const lockfile = await this.appDir.file("composer.lock").contents()
+		const lockfile = await this.laravelDir.file("composer.lock").contents()
     const lockHash = crypto.createHash("sha256").update(lockfile).digest("hex").slice(0, 12)
 
-		return this.appDir
+		return this.laravelDir
 			.with((dir) => {
 				if (target === "prod-stage") {
 					return dir.withFile("supervisord.conf", this.supervisor)
@@ -78,7 +78,7 @@ export class DaggerPlayground {
 						return ctx.withMountedFile("/etc/supervisor/conf.d/supervisord.conf", this.supervisor)
 					}
 					return ctx
-						.withMountedDirectory("/var/www", this.appDir)
+						.withMountedDirectory("/var/www", this.laravelDir)
 						.withMountedCache("/var/www/vendor", dag.cacheVolume(`vendor-${target}-${lockHash}`))
 						.withExec(['composer', 'install', '--no-interaction', '--prefer-dist']);
 				})
@@ -176,7 +176,7 @@ export class DaggerPlayground {
 		]);
 		
 		return ctx.withRegistryAuth(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com`, "AWS", ecrLoginPassword)
-			.publish(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com/app:${tag}`)
+			.publish(`${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com/laravel:${tag}`)
 	}
 
 	@func()
@@ -187,8 +187,8 @@ export class DaggerPlayground {
 		]);
 
 		const clusterName = "app-cluster";  
-		const serviceName = "app-service";     
-		const family = "app-task";             
+		const serviceName = "laravel-service";     
+		const family = "laravel-task";             
 
 		// 1. Get the current task definition JSON
 		const describeTaskDef = await awsCli.withExec([
@@ -203,7 +203,7 @@ export class DaggerPlayground {
 		// Update container image in the containerDefinitions array
 		for (const container of taskDef.containerDefinitions) {
 			if (["php", "supervisor"].includes(container.name)) {  // replace with your container name
-				container.image = `${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com/app:${tag}`;
+				container.image = `${awsAccountId}.dkr.ecr.eu-central-1.amazonaws.com/laravel:${tag}`;
 			}
 		}
 
@@ -238,7 +238,7 @@ export class DaggerPlayground {
 		// 4. Update Parameter Store with new container tag
 		const ssmParaterUpdate = await awsCli.withExec([
 			'aws', 'ssm', 'put-parameter',
-			'--name', '/app/container/tag',
+			'--name', '/laravel/container/tag',
 			'--value', tag,
 			'--type', 'String',
 			'--overwrite'

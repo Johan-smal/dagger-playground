@@ -2,7 +2,7 @@ variable "aws_region" {
   type = string
 }
 
-variable "app_ecr" {
+variable "laravel_ecr" {
   type = object({
     repository_url = string
   })

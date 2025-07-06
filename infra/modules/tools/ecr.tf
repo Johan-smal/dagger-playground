@@ -1,14 +1,12 @@
-resource "aws_ecr_repository" "app_ecr" {
-  name                 = "app"
+resource "aws_ecr_repository" "laravel_ecr" {
+  name                 = "laravel"
   image_tag_mutability = "MUTABLE"
 }
 
-# data "aws_ecr_image" "app_image" {
-#   repository_name = aws_ecr_repository.app_ecr.name
-#   image_tag       = "latest"
-# }
-
-output "app_ecr" {
-  value = aws_ecr_repository.app_ecr
+output "laravel_ecr" {
+  value = {
+    repository_url = aws_ecr_repository.laravel_ecr.repository_url
+  }
+  description = "The ECR repository URL for the Laravel application."
 }
 

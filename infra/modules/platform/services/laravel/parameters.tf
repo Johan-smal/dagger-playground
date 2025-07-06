@@ -1,6 +1,6 @@
-resource "aws_ssm_parameter" "app_container_tag" {
-  name        = "/app/container/tag"
-  description = "The tag for the application container image"
+resource "aws_ssm_parameter" "laravel_container_tag" {
+  name        = "/laravel/container/tag"
+  description = "The tag for the Laravel container image"
   type        = "String"
   value       = "latest"
   overwrite   = true

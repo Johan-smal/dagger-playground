@@ -1,5 +1,5 @@
-resource "aws_ecs_task_definition" "app" {
-  family                   = "app-task"
+resource "aws_ecs_task_definition" "laravel" {
+  family                   = "laravel-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
@@ -21,7 +21,7 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = jsonencode([
     {
       name      = "php"
-      image     = "${var.app_ecr.repository_url}:${aws_ssm_parameter.app_container_tag.value}"
+      image     = "${var.app_ecr.repository_url}:${aws_ssm_parameter.laravel_container_tag.value}"
       essential = true
       command   = ["php", "artisan", "serve", "--port=80", "--host=0.0.0"]
       environment = [
@@ -57,7 +57,7 @@ resource "aws_ecs_task_definition" "app" {
       ]
       }, {
       name      = "supervisor"
-      image     = "${var.app_ecr.repository_url}:${aws_ssm_parameter.app_container_tag.value}"
+      image     = "${var.app_ecr.repository_url}:${aws_ssm_parameter.laravel_container_tag.value}"
       essential = false
       command   = ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
       environment = [

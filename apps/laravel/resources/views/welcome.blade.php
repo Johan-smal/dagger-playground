@@ -13,11 +13,7 @@
 </head>
 <body>
     <main class="container">
-      <h1>Hello world!</h1>
-      <p>
-        This is a simple Laravel application running on Dagger.
-        The application is served by an Caddy server and the PHP application is running in a Docker container.
-        The application is configured to use AWS services for service discovery and API Gateway.
+        <h1>Hello world!</h1>
     </main>
 </body>
 </html>

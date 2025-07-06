@@ -19,14 +19,18 @@ module "tools" {
   source = "./modules/tools"
 }
 
-module "platform" {
-  source     = "./modules/platform"
-  app_ecr    = module.tools.app_ecr
-  aws_region = var.aws_region
-  app_key    = var.app_key
-  depends_on = [module.tools]
-}
-
 output "tools" {
   value = module.tools
+}
+
+module "platform" {
+  source      = "./modules/platform"
+  laravel_ecr = module.tools.laravel_ecr
+  aws_region  = var.aws_region
+  app_key     = var.app_key
+  depends_on  = [module.tools]
+}
+
+output "platform" {
+  value = module.platform
 }

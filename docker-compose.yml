@@ -23,7 +23,7 @@ services:
 
   app:
     extends:
-      file: ./app/docker-compose.yml
+      file: ./apps/laravel/docker-compose.yml
       service: php
     # command: php artisan serve --port=80 --host=0.0.0
     extra_hosts:
@@ -37,7 +37,7 @@ services:
 
   supervisor:
     extends:
-      file: ./app/docker-compose.yml
+      file: ./apps/laravel/docker-compose.yml
       service: php
     extra_hosts:
       - "host.docker.internal:host-gateway"

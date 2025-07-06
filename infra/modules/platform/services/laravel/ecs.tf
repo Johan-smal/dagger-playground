@@ -1,7 +1,7 @@
-resource "aws_ecs_service" "app_service" {
-  name                   = "app-service"
+resource "aws_ecs_service" "laravel_service" {
+  name                   = "laravel-service"
   cluster                = var.ecs_cluster.id
-  task_definition        = aws_ecs_task_definition.app.arn
+  task_definition        = aws_ecs_task_definition.laravel.arn
   desired_count          = 1
   enable_execute_command = true
 
@@ -9,7 +9,7 @@ resource "aws_ecs_service" "app_service" {
 
   network_configuration {
     subnets          = var.public_subnets
-    security_groups  = [aws_security_group.app_sg.id]
+    security_groups  = [aws_security_group.laravel_sg.id]
     assign_public_ip = true
   }
 
