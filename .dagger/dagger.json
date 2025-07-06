@@ -3,5 +3,11 @@
   "engineVersion": "v0.18.8",
   "sdk": {
     "source": "typescript"
-  }
+  },
+  "dependencies": [
+    {
+      "name": "laravel",
+      "source": "../apps/laravel/.dagger"
+    }
+  ]
 }

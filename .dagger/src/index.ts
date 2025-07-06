@@ -6,34 +6,25 @@ import {
 	Container,
 	dag,
 	File,
-	Secret,
-	Platform
+	Secret
 } from "@dagger.io/dagger";
-import * as crypto from "crypto"
+
+export enum Apps {
+  Laravel = "laravel",
+  Bun = "bun"
+}
 
 @object()
 export class DaggerPlayground {
-	laravelDir: Directory;
 	infraDir: Directory;
 	credentials: File;
 	config: File;
-	supervisor: File;
 
 	/**
 	 * Create a new DaggerPlayground instance.
 	 *
-	 * @param laravelDir - The directory to use for the Laravel app.
-	 *              Defaults to "/apps/laravel" and ignores certain files and directories.
 	 */
 	constructor(
-		@argument({ 
-			defaultPath: "/apps/laravel",
-			ignore: [
-				'vendor',
-				'.env',
-				'docker-compose.yml',
-			]
-		}) laravelDir: Directory,
 		@argument({ 
 			defaultPath: "/infra",
 			ignore: [
@@ -45,43 +36,11 @@ export class DaggerPlayground {
 		}) credentials: File,
 		@argument({
 			defaultPath: "/config"
-		}) config: File,
-		@argument({
-			defaultPath: "/.docker/supervisor/supervisord.conf",
-		}) supervisor: File 
+		}) config: File
 	) {
-		this.laravelDir = laravelDir;
 		this.infraDir = infraDir;
 		this.credentials = credentials;
 		this.config = config;
-		this.supervisor = supervisor;
-	}
-
-	private async appEnv(
-		{ target, platform }: { 
-			target: 'cicd-stage' | 'prod-stage', 
-			platform?: Platform 
-		} = { target: "cicd-stage" }): Promise<Container> {
-		const lockfile = await this.laravelDir.file("composer.lock").contents()
-    const lockHash = crypto.createHash("sha256").update(lockfile).digest("hex").slice(0, 12)
-
-		return this.laravelDir
-			.with((dir) => {
-				if (target === "prod-stage") {
-					return dir.withFile("supervisord.conf", this.supervisor)
-				}
-				return dir
-			})
-			.dockerBuild({ target, platform })
-				.with((ctx) => {
-					if (target === "prod-stage") {
-						return ctx.withMountedFile("/etc/supervisor/conf.d/supervisord.conf", this.supervisor)
-					}
-					return ctx
-						.withMountedDirectory("/var/www", this.laravelDir)
-						.withMountedCache("/var/www/vendor", dag.cacheVolume(`vendor-${target}-${lockHash}`))
-						.withExec(['composer', 'install', '--no-interaction', '--prefer-dist']);
-				})
 	}
 
 	private async infraEnv(): Promise<Container> {
@@ -129,48 +88,58 @@ export class DaggerPlayground {
 	 * Run function to inspect the container.
 	 */
 	@func()
-	async inspect(): Promise<Container> {
-		return (await this.appEnv())
-			.withWorkdir("/var/www")
-			.terminal()
+	async inspect(m: Apps = Apps.Laravel): Promise<Container> {
+		switch (m) {
+			case Apps.Laravel:
+				return dag[m]().inspect();
+			default:
+				throw new Error(`Unknown app: ${m}`);
+		}
 	}
 	/**
 	 * Run app tests
 	 */
 	@func()
-	async test(ctr?: Container): Promise<string> {
-		return (ctr ?? await this.appEnv())
-			.withExec(['php', 'artisan', 'test'])
-			.stdout();
+	async test(m: Apps = Apps.Laravel): Promise<string> {
+		switch (m) {
+			case Apps.Laravel:
+				return dag[m]().test();
+			default:
+				throw new Error(`Unknown app: ${m}`);
+		}
 	}
 
 	/**
 	 * Run app linter
 	 */
 	@func()
-	async lint(ctr?: Container): Promise<string> {
-		return (ctr ?? await this.appEnv())
-			.withExec(['./vendor/bin/pint', '--test'])
-			.stdout()
+	async lint(m: Apps = Apps.Laravel): Promise<string> {
+		switch (m) {
+			case Apps.Laravel:
+				return dag[m]().lint();
+			default:
+				throw new Error(`Unknown app: ${m}`);
+		}
 	}
 
 	/**
 	 * Pre-build steps
 	 */
 	@func()
-	async prebuild(): Promise<string[]> {
-		const appEnv = await this.appEnv();
-		return await Promise.all([
-			this.test(appEnv),
-			this.lint(appEnv),
-		])
-	}
+	async prebuild(m: Apps = Apps.Laravel): Promise<string[]> {
+		switch (m) {
+			case Apps.Laravel:
+				return dag[m]().prebuild();
+			default:
+				throw new Error(`Unknown app: ${m}`);
+		}
+	}	
 
 	@func()
 	async push(tag: string = "latest"): Promise<string> {
 		const awsCli = await this.awsCliEnv();
 		const [ctx, ecrLoginPassword, awsAccountId] = await Promise.all([
-			this.appEnv({ target: "prod-stage", /* platform: "linux/amd64" as Platform */ }),
+			dag.laravel().prod(),
 			this.ecrLoginPassword(awsCli),
 			this.awsAccountId(awsCli)
 		]);
