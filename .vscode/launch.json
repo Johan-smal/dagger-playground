@@ -12,6 +12,16 @@
       "pathMappings": {
         "/var/www/": "${workspaceRoot}/apps/laravel/"
       }
+    },
+    {
+      // NOTE: This is not working yet.
+      // See https://github.com/oven-sh/bun/issues/7490
+      "type": "bun",
+      "request": "attach",
+      "name": "Attach to Bun",
+      // The URL of the WebSocket inspector to attach to.
+      // This value can be retrieved by using `bun --inspect`.
+      "url": "ws://localhost:6499/hono-app",
     }
   ]
 }

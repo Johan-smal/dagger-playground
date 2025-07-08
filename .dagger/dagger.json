@@ -8,6 +8,10 @@
     {
       "name": "laravel",
       "source": "../apps/laravel/.dagger"
+    },
+    {
+      "name": "hono",
+      "source": "../apps/hono/.dagger"
     }
   ]
 }

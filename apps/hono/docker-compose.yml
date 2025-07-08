@@ -1,0 +1,11 @@
+services:
+  hono:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev-stage
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      - NODE_ENV=development

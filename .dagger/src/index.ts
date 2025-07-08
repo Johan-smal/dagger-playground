@@ -11,7 +11,7 @@ import {
 
 export enum Apps {
   Laravel = "laravel",
-  Bun = "bun"
+  Hono = "hono"
 }
 
 @object()
@@ -73,17 +73,6 @@ export class DaggerPlayground {
 		return dag.setSecret("ECR_LOGIN_PASSWORD", await awsCli.withExec(['aws', 'ecr', 'get-login-password']).stdout());
 	}
 
-	private async loadEnvironmentVariables(dir: Directory, target = ".env"): Promise<void> {
-		const envFile = await dir.file(target).contents();
-		// Ensure the .env file is loaded into the environment
-		for (const line of envFile.split("\n")) {
-			const [key, value] = line.split("=");
-			if (key && value) {
-				Bun.env[key] = value;
-			}
-		}
-	}
-
 	/**
 	 * Run function to inspect the container.
 	 */
@@ -91,6 +80,7 @@ export class DaggerPlayground {
 	async inspect(m: Apps = Apps.Laravel): Promise<Container> {
 		switch (m) {
 			case Apps.Laravel:
+			case Apps.Hono:
 				return dag[m]().inspect();
 			default:
 				throw new Error(`Unknown app: ${m}`);
@@ -103,6 +93,7 @@ export class DaggerPlayground {
 	async test(m: Apps = Apps.Laravel): Promise<string> {
 		switch (m) {
 			case Apps.Laravel:
+			case Apps.Hono:
 				return dag[m]().test();
 			default:
 				throw new Error(`Unknown app: ${m}`);
@@ -129,6 +120,7 @@ export class DaggerPlayground {
 	async prebuild(m: Apps = Apps.Laravel): Promise<string[]> {
 		switch (m) {
 			case Apps.Laravel:
+			case Apps.Hono:
 				return dag[m]().prebuild();
 			default:
 				throw new Error(`Unknown app: ${m}`);

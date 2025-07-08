@@ -1,0 +1,9 @@
+{
+  "[caddyfile]": {
+    "editor.formatOnSave": false
+  },
+  "files.associations": {
+    "Caddyfile": "caddyfile",
+    "*.Caddyfile": "caddyfile"
+  }
+}

@@ -19,21 +19,21 @@ services:
       - "443:443"
       - "443:443/udp"
     depends_on:
-      - app
+      - laravel
+      - hono
 
-  app:
+  laravel:
     extends:
       file: ./apps/laravel/docker-compose.yml
       service: php
-    # command: php artisan serve --port=80 --host=0.0.0
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       - XDEBUG_MODE=develop,debug
     volumes:
       - ./.docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
-    # ports:
-    #   - 80:80
+    depends_on:
+      - redis
 
   supervisor:
     extends:
@@ -47,6 +47,21 @@ services:
     volumes:
       - ./.docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
       - ./.docker/supervisor/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
+    depends_on:
+      - redis
+
+  hono:
+    extends:
+      file: ./apps/hono/docker-compose.yml
+      service: hono
+    working_dir: /app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "6499:6499"
+    environment:
+      - NODE_ENV=development
+    command: bun run dev
 
   redis:
     image: redis:alpine

@@ -1,13 +1,13 @@
-localhost {
-	# This sets the root context for Caddy, even if it's not serving files directly.
-	# It's important for the 'fastcgi' transport to construct paths.
-	root * /var/www/public # Caddy still needs to know the "root" for internal path construction.
-
-	reverse_proxy app:9000 {
+laravel.local {
+	reverse_proxy laravel:9000 {
 		transport fastcgi {
 			env SCRIPT_FILENAME /var/www/public/index.php
 			env DOCUMENT_ROOT /var/www/public
 			split .php
 		}
 	}
+}
+
+hono.local {
+	reverse_proxy hono:3000
 }
