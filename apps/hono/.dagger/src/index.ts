@@ -22,6 +22,7 @@ export class Hono {
 		@argument({ 
 			defaultPath: "/apps/hono",
 			ignore: [
+        'coverage',
 				'node_modules',
 				'.env',
 				'docker-compose.yml',
@@ -67,6 +68,16 @@ export class Hono {
 			.withExec(['bun', 'test'])
 			.stdout();
 	}
+
+  /**
+   * Return the coverage report
+   */
+  @func()
+  async coverage(ctr?: Container): Promise<Directory> {
+    return (ctr ?? await this.appEnv())
+      .withExec(['bun', 'test:coverage'])
+      .directory('/app/coverage');
+  }
 
 	/**
 	 * Run app linter

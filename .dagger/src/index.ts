@@ -101,6 +101,19 @@ export class DaggerPlayground {
 	}
 
 	/**
+	 * Run app coverage
+	 */
+	@func()
+	async coverage(m: Apps = Apps.Hono): Promise<Directory> {
+		switch (m) {
+			case Apps.Hono:
+				return dag[m]().coverage();
+			default:
+				throw new Error(`Unknown app: ${m}`);
+		}
+	}
+
+	/**
 	 * Run app linter
 	 */
 	@func()
