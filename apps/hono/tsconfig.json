@@ -12,8 +12,9 @@
     "outDir": "dist",
     "paths": {
 			"@public/*": ["./public/*"],
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+      "@bin/*": ["./bin/*"],
 		}
   },
-  "include": ["src", "bin", "tests"]
+  "include": ["src", "bin", "tests", "public"],
 }

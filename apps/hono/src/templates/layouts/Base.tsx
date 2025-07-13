@@ -1,6 +1,6 @@
 import type { FC, PropsWithChildren } from "hono/jsx";
 
-export const Layout: FC<PropsWithChildren<{ 
+export const Base: FC<PropsWithChildren<{ 
 	title: string
 }>> = ({
 	children,
@@ -16,9 +16,7 @@ export const Layout: FC<PropsWithChildren<{
 				<script defer type="module" src={mainjs} />
 			</head>
 			<body>
-				<div id="main-container">
-					{children}
-				</div>
+        {children}
 			</body>
 		</html>
 	);

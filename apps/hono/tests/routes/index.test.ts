@@ -1,20 +1,31 @@
-import { expect, describe, it, beforeAll } from "bun:test";
+import { expect, describe, it, beforeAll, mock } from "bun:test";
 import { app } from '@/routes'
 import { generateMigration, generateDrizzleJson } from "drizzle-kit/api";
 import { schema, db } from "@/db";
 import { seeder } from "@/db/seeder";
 
 beforeAll(async () => {
+  mock.module("@/lib/auth", () => {
+    return {
+      hashPassword: async (password: string) => {
+        return `hashed-${password}`;
+      },
+      verifyPassword: async (password: string, hash: string) => {
+        return hash === `hashed-${password}`;
+      },
+    };
+  });
   const migrationStatements = await generateMigration(
     generateDrizzleJson({}),
     generateDrizzleJson(schema)
   );
-  await db.execute(migrationStatements.join('\n'));
-
+  for (const query of migrationStatements) {
+    await db.execute(query);
+  }
   await seeder(db);
 })
 
-describe('Hono Routes', () => {
+describe('routes', () => {
   it('should respond with "Hello change!" on GET /', async () => {
     const res = await app.request('/')
     expect(res.status).toBe(200)

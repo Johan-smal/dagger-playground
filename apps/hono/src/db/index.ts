@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { schema } from "@/db/schema";
 import { NodeFS } from "@electric-sql/pglite/nodefs";
 
-const pglite = new PGlite({
+export const pglite = new PGlite({
 	fs: Bun.env.NODE_ENV === "test"
 		? new MemoryFS() 
 		: new NodeFS("./.pglite/"),

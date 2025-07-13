@@ -1,15 +1,21 @@
 import { Hono } from "hono";
-import { pageMiddleware } from "@/middleware/layout";
-import { containerMiddleware } from "@/middleware/container";
-import { Home } from "@/templates/pages/Home";
+
+import { containerMiddleware, ContainerVariables } from "@/middleware/container";
+
+import { app as publicRoute } from "@/routes/public";
+import { app as hxRoutes } from "@/routes/hx"
+import { app as pageRoutes } from "@/routes/pages"
+
 import { NotFound } from "@/templates/pages/NotFound";
 
-const app = new Hono()
+const app = new Hono<{
+		Variables: ContainerVariables;
+	}>()
+	.route("/public", publicRoute)
 	.use(containerMiddleware)
-	.get("/", pageMiddleware("Home"), (c) => c.render(<Home />))
-	.get('/health', (c) => {
-    return c.json({ status: 'ok' });
-  })
+	.route("/", pageRoutes)
+	.route("/hx", hxRoutes)
+	.get('/health', async (c) => c.json({ status: 'ok' }))
 	.notFound((c) => {
 		c.status(404);
 		return c.render(<NotFound />);
