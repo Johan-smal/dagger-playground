@@ -13,5 +13,6 @@ export const Link: FC<LinkProps> = ({ children, route, className, "hx-target": h
     hx-target={hxTarget ?? "#main-container"} 
     hx-replace-url={hxReplaceUrl === undefined ? route : hxReplaceUrl ?? undefined} 
     class={`${className ?? ''} cursor-pointer`}
+    role="menuitem"
   >{children}</a>
 }

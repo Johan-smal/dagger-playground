@@ -13,7 +13,7 @@ const createLayoutMiddleware = (
 		}
 		c.header('HX-Retarget', '#main-container')
 		return <>
-			<head><title>{title}</title></head>
+			<script dangerouslySetInnerHTML={{ __html: `document.title = "${title}"`}} />
 			{children}
 		</>
 	}))

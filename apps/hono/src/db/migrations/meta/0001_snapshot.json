@@ -1,6 +1,6 @@
 {
-  "id": "b87fd028-c300-4cd3-85ff-ecf70f60eac0",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "ec02bb4f-f33f-45ca-af22-e363c46a483f",
+  "prevId": "b87fd028-c300-4cd3-85ff-ecf70f60eac0",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -19,6 +19,12 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         },
         "client_id": {
           "name": "client_id",
@@ -43,6 +49,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "appointments_organization_id_organizations_id_fk": {
+          "name": "appointments_organization_id_organizations_id_fk",
+          "tableFrom": "appointments",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "appointments_client_id_clients_id_fk": {
           "name": "appointments_client_id_clients_id_fk",
           "tableFrom": "appointments",

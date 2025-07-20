@@ -5,7 +5,9 @@ import {
 	uuid,
 	timestamp,
 	serial,
-	primaryKey
+	primaryKey,
+	unique,
+	uniqueIndex
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -48,10 +50,40 @@ export const usersToOrganizations = pgTable(
 	(t) => [primaryKey({ columns: [t.userId, t.organizationId] })]
 )
 
+export const referrals = pgTable("referrals", {
+	id: uuid("id").primaryKey(),
+	organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "cascade" }),
+	name: text("name")
+})
+
+export const clients = pgTable(
+	"clients", 
+	{
+		id: uuid("id").primaryKey(),
+		organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "cascade" }),
+		email: text("email").notNull(),
+		name: text("name"),
+		referralId: uuid("referal_id").references(() => referrals.id, { onDelete: "set null" })
+	},
+	(t) => [uniqueIndex('email_unique_in_org').on(t.organizationId, t.email)]
+)
+
+export const appointments = pgTable("appointments", {
+	id: uuid("id").notNull(),
+	datetime: timestamp("datetime").notNull(),
+	organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "cascade" }),
+	clientId: uuid("client_id").references(() => clients.id),
+	createdAt: timestamp("created_at").defaultNow(),
+	updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+})
+
 export const schema = {
 	users, 
 	authKeys,
 	sessions,
 	organizations,
-	usersToOrganizations
+	usersToOrganizations,
+	referrals,
+	clients,
+	appointments
 };

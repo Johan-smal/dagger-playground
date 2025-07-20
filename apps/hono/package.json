@@ -10,13 +10,15 @@
     "cli": "./bin/cli.ts"
   },
   "dependencies": {
+    "@alpinejs/focus": "^3.14.9",
     "@electric-sql/pglite": "^0.3.4",
     "@hono/zod-validator": "^0.7.1",
+    "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/postcss": "^4.1.11",
     "alpinejs": "^3.14.9",
-    "bcrypt": "^6.0.0",
     "drizzle-orm": "^0.44.2",
     "drizzle-seed": "^0.3.1",
+    "drizzle-zod": "^0.8.2",
     "hono": "^4.6.17",
     "htmx.org": "^2.0.6",
     "postcss": "^8.5.6",
@@ -27,7 +29,7 @@
   "devDependencies": {
     "@rspack/core": "^1.4.6",
     "@types/alpinejs": "^3.13.11",
-    "@types/bcrypt": "^5.0.2",
+    "@types/alpinejs__focus": "^3.13.4",
     "@types/bun": "latest",
     "@types/node": "^24.0.13",
     "@types/yargs": "^17.0.33",

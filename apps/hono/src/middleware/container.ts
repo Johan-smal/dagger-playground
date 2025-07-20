@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { entityServices } from "@/lib/entity";
 import { createMiddleware } from "hono/factory";
 
 // Strongly typed dependency container
@@ -21,6 +22,7 @@ class Container<T extends Record<string, NonNullable<unknown>>> {
 // Define the services that will be injected
 type ServiceMap = {
 	db: typeof db;
+	entityServices: typeof entityServices
 };
 
 // Ensure Hono has the correct types for injected variables
@@ -34,6 +36,7 @@ export const containerMiddleware = createMiddleware<{
 }>(async (c, next) => {
 	const container = new Container<ServiceMap>();
 	container.set("db", db);
+	container.set("entityServices", entityServices)
 
 	c.set("container", container);
 	await next();

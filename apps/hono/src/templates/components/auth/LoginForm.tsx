@@ -11,13 +11,13 @@ export const LoginForm: FC = () => {
           name="email"
           type="text"
           placeholder="Enter Email"
-          icon={<Icon name="email" />}
+          icon={<Icon name="envelope" />}
         />
         <Input 
           name="password"
           type="password"
           placeholder="Enter Password"
-          icon={<Icon name="password" />}
+          icon={<Icon name="key" />}
         />
         <button type="submit" class="btn w-full mb-4">Sign in</button>
         <div>

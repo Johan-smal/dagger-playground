@@ -24,17 +24,11 @@ describe("Password hashing", () => {
   });
 
   test("verifyPassword handles invalid hash safely", async () => {
-    const result = await verifyPassword(password, "invalidhash");
-    expect(result).toBe(false);
-  });
-
-  test("bcryptCompare throws on invalid input", async () => {
-    mock.module("bcrypt", () => ({
-      compare: async (a: any, b: any) => {
-        throw new Error("forced failure");
-      }
-    }));
-    const result = await verifyPassword(password, null as any);
-    expect(result).toBe(false);
+    expect.assertions(1);
+    try {
+      await verifyPassword(password, "invalidhash");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+    }
   });
 });

@@ -33,13 +33,6 @@ describe('routes', () => {
     expect(html).toContain('Welcome to Hono!')
   })
 
-  it('should respond with Ok status on GET /health', async () => {
-    const res = await app.request('/health')
-    expect(res.status).toBe(200)
-    const json = await res.json()
-    expect(json).toEqual({ status: 'ok' })
-  })
-
   it('should respond with 404 on unknown route', async () => {
     const res = await app.request('/unknown')
     expect(res.status).toBe(404)

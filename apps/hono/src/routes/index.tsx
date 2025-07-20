@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { logger } from 'hono/logger'
 
 import { containerMiddleware, ContainerVariables } from "@/middleware/container";
 
@@ -12,16 +13,21 @@ const app = new Hono<{
 		Variables: ContainerVariables;
 	}>()
 	.route("/public", publicRoute)
+	.use(logger((message: string, ...rest: string[]) => {
+		if (Bun.env.NODE_ENV !== 'test') {
+			console.log(message, ...rest)
+		}
+	}))
 	.use(containerMiddleware)
 	.route("/", pageRoutes)
 	.route("/hx", hxRoutes)
-	.get('/health', async (c) => c.json({ status: 'ok' }))
 	.notFound((c) => {
 		c.status(404);
 		return c.render(<NotFound />);
 	})
 	.onError((err, c) => {
 		c.status(500);
+		console.error(err)
 		return c.render(<div>Error: {err.message}</div>);
 	});
 

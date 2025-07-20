@@ -12,6 +12,7 @@ export const generateTailwind = async () : Promise<BuildArtifact> => {
         setup(build) {
           build.onLoad({ filter: /.\.(css)$/ }, async (args) => {
             const css = await Bun.file(args.path).text();
+            
             const result = await postcss([tailwindcss()]).process(css, {
               from: args.path,
             });
@@ -63,7 +64,7 @@ export const generateJS = async () : Promise<Map<string, Blob>> => {
         // "@/db/schema": "../src/db/schema",
         // "@/db/service": "../src/db/service",
       },
-      extensions: [".ts"],
+      extensions: [".ts", ".js"],
     },
   });
 
