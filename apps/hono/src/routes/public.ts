@@ -25,7 +25,7 @@ export const app = new Hono()
       inMemoryFS = files.get("js") as Map<string, Blob>;
     } else {
       inMemoryFS = await generateJS();
-      files.set("js", inMemoryFS);
+      // files.set("js", inMemoryFS);
     }
     if (!inMemoryFS.has(identifier)) {
       throw new Error(`file not found ${identifier}`);

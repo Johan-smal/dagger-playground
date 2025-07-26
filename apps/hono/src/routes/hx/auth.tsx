@@ -2,16 +2,11 @@ import { Hono } from "hono";
 import { ContainerVariables } from "@/middleware/container";
 import { SignUpForm } from "@/templates/components/auth/SignUpForm";
 import { setCookie, deleteCookie } from 'hono/cookie'
-import z from "zod"
 import { zValidator } from '@hono/zod-validator'
 import { authKeys, users, sessions } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth";
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string()
-})
+import { loginSchema } from "@/schemas"
 
 const app = new Hono<{
     Variables: ContainerVariables;
@@ -45,7 +40,7 @@ const app = new Hono<{
       setCookie(c, "test", `${session.id}`, {
         secure: true,
         httpOnly: true,
-        maxAge: 1000,
+        maxAge: 10000,
         expires: new Date(Date.UTC(2000, 11, 24, 10, 30, 59, 900)),
         sameSite: 'Strict',
       })

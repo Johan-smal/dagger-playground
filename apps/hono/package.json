@@ -10,6 +10,7 @@
     "cli": "./bin/cli.ts"
   },
   "dependencies": {
+    "@alpinejs/anchor": "^3.14.9",
     "@alpinejs/focus": "^3.14.9",
     "@electric-sql/pglite": "^0.3.4",
     "@hono/zod-validator": "^0.7.1",
@@ -29,9 +30,11 @@
   "devDependencies": {
     "@rspack/core": "^1.4.6",
     "@types/alpinejs": "^3.13.11",
+    "@types/alpinejs__anchor": "^3.13.1",
     "@types/alpinejs__focus": "^3.13.4",
     "@types/bun": "latest",
     "@types/node": "^24.0.13",
+    "@types/qs": "^6.14.0",
     "@types/yargs": "^17.0.33",
     "daisyui": "^5.0.46",
     "drizzle-kit": "^0.31.4",

@@ -8,7 +8,8 @@ import {
   referrals,
   appointments
 } from "@/db/schema";
-import { and, desc, eq, getTableColumns, gt, lt } from "drizzle-orm";
+import { AppointmentFilters } from "@/schemas";
+import { and, between, desc, eq, getTableColumns, gt, lt } from "drizzle-orm";
 
 export const entityServices =  {
   users: {
@@ -52,18 +53,13 @@ export const entityServices =  {
   appointments: {
     index: async (
       org: typeof organizations.$inferSelect,
-      filters: {
-        startDate?: string,
-        endDate?: string,
-        clients?: (typeof clients.$inferSelect)['id'][]
-        referrals?: (typeof referrals.$inferSelect)['id'][]
-      } = {}
+      filters: AppointmentFilters = {}
     ) => {
       const qb = db.select({
-        ...getTableColumns(appointments),
-        email: clients.email,
-        referral: referrals.name
-      })
+          ...getTableColumns(appointments),
+          email: clients.email,
+          referral: referrals.name
+        })
         .from(appointments)
         .innerJoin(clients, eq(appointments.clientId, clients.id))
         .innerJoin(referrals, eq(clients.referralId, referrals.id))
@@ -72,15 +68,12 @@ export const entityServices =  {
 
       const where = [
         eq(appointments.organizationId, org.id),
-        filters.startDate ? gt(appointments.datetime, new Date(filters.startDate)) : undefined,
-        filters.endDate ? lt(appointments.datetime, new Date(filters.endDate)) : undefined
+        filters.datetime?.gt ? gt(appointments.datetime, new Date(filters.datetime.gt)) : undefined,
+        filters.datetime?.lt ? lt(appointments.datetime, new Date(filters.datetime.lt)) : undefined,
+        filters.datetime?.between ? between(appointments.datetime, new Date(filters.datetime.between[0]), new Date(filters.datetime.between[1])) : undefined
       ]
 
-      qb.where(and(...where))
-
-      console.log('query', qb.toSQL(), filters)
-
-      return qb
+      return qb.where(and(...where))
     }
   }
 }

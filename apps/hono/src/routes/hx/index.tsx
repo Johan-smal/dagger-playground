@@ -2,10 +2,12 @@ import { Hono } from "hono";
 import { ContainerVariables } from "@/middleware/container";
 import { app as authRoutes } from "./auth";
 import { zValidator } from "@hono/zod-validator";
-import z from "zod"
 import { AppointmentsTable } from "@/templates/components/entities/appointments/AppointmentsTable";
 import { jsxRenderer } from "hono/jsx-renderer";
 import { authMiddleware } from "@/middleware/auth";
+import { appointmentFiltersSchema } from "@/schemas";
+import { validator } from 'hono/validator'
+import { normalizeFilters } from "@/lib/utils";
 
 const appointmentRoutes = new Hono<{
     Variables: ContainerVariables;
@@ -13,11 +15,15 @@ const appointmentRoutes = new Hono<{
   .use(authMiddleware)
   .get(
     "/",
-    zValidator("query", z.object({
-      startDate: z.string().optional(),
-      endDate: z.string().optional()
-    })),
-    async (c) => c.render(<AppointmentsTable filters={c.req.valid("query")} />)
+    validator("query", async (value, _c) => {
+      console.log('value', value)
+      console.log(normalizeFilters(value))
+      return await appointmentFiltersSchema.parseAsync(normalizeFilters(value))
+    }),
+    async (c) => {
+      console.log('two', c.req.valid("query"))
+      return c.render(<AppointmentsTable filters={c.req.valid("query")} />)
+    }
   )
 
 const app = new Hono<{

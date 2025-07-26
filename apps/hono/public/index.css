@@ -2,3 +2,5 @@
 
 @plugin "@tailwindcss/forms";
 @plugin "daisyui";
+
+[x-cloak] { display: none !important; }
