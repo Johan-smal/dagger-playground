@@ -11,7 +11,7 @@ export const app = new Hono()
 			output = files.get("css") as BuildArtifact;
 		} else {
 			output = await generateTailwind();
-      files.set("css", output);
+      // files.set("css", output);
 		}
 
 		c.header("Content-Type", output.type);

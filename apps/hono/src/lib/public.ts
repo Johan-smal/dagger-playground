@@ -46,16 +46,26 @@ export const generateJS = async () : Promise<Map<string, Blob>> => {
     module: {
       rules: [
         {
-          test: /\.ts$/,
+          test: /\.[jt]sx?$/,
           exclude: [/node_modules/],
           loader: "builtin:swc-loader",
           options: {
             jsc: {
               parser: {
                 syntax: "typescript",
+                tsx: true,
               },
+              transform: {
+                react: {
+                  runtime: "automatic"
+                }
+              }
             },
           },
+        },
+        {
+          test: /\.css$/,
+          use: ["style-loader", "css-loader"]
         },
       ],
     },
@@ -64,7 +74,7 @@ export const generateJS = async () : Promise<Map<string, Blob>> => {
         // "@/db/schema": "../src/db/schema",
         // "@/db/service": "../src/db/service",
       },
-      extensions: [".ts", ".js"],
+      extensions: [".ts", ".js", ".tsx"],
     },
   });
 

@@ -234,3 +234,16 @@ export function formComponent (Alpine: Alpine) {
     }
   }))
 }
+
+export function tldrawComponent(Alpine: Alpine) {
+  Alpine.data("tldrawEditor", () => ({
+    async init() {
+      const container = this.$refs.tldraw
+      if (!container) return
+
+      // Dynamically import the tldraw mount function (split bundle)
+      const { mountTldraw } = await import('../tldraw/TldrawMount');
+      mountTldraw(container)
+    }
+  }))
+}
