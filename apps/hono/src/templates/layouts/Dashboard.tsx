@@ -123,7 +123,7 @@ export const Dashboard: FC<DashboardProps> = async ({ children, title }) => {
 
         <nav 
           x-cloak 
-          class="fixed left-0 z-30 flex h-svh w-60 shrink-0 flex-col border-r border-outline bg-surface-alt p-4 transition-transform duration-300 md:w-64 md:translate-x-0 md:relative dark:border-outline-dark dark:bg-surface-dark-alt"
+          class="fixed left-0 z-30 flex h-svh w-60 shrink-0 flex-col border-r border-outline bg-surface-alt p-4 md:w-64 md:translate-x-0 md:relative"
           x-bind:class="sidebarIsOpen ? 'translate-x-0' : '-translate-x-60'"
           aria-label="sidebar navigation"
         >
@@ -131,7 +131,7 @@ export const Dashboard: FC<DashboardProps> = async ({ children, title }) => {
         </nav>
 
         {/* <!-- top navbar & main content  --> */}
-        <div class="h-svh w-full overflow-y-auto bg-surface dark:bg-surface-dark">
+        <div class="h-svh w-full bg-surface dark:bg-surface-dark flex flex-col">
           {/* <!-- top navbar  --> */}
           <nav class="sticky top-0 z-10 flex items-center justify-between border-b border-outline bg-surface-alt px-4 py-2 dark:border-outline-dark dark:bg-surface-dark-alt" aria-label="top navibation bar">
             {/* <!-- sidebar toggle button for small screens  --> */}
@@ -145,10 +145,10 @@ export const Dashboard: FC<DashboardProps> = async ({ children, title }) => {
             <ProfileMenu user={user} />
           </nav>
           {/* <!-- main content  --> */}
-          <div id="main-content" class="p-4">
-              <div id="main-container">
-                  { children }
-              </div>
+          <div class="flex-1 overflow-y-auto">
+            <div id="main-container">
+              { children }
+            </div>
           </div>
         </div>
       </div>

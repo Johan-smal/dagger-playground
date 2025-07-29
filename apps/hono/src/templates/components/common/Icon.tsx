@@ -13,6 +13,7 @@ type IconProps = {
   | "globe-alt"
   | "calendar"
   | "plus"
+  | "arrows-up-down"
   className?: string
 }
 
@@ -46,6 +47,8 @@ export const Icon: FC<IconProps> = ({ name, className }) => {
             return <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
           case "plus":
             return <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          case "arrows-up-down":
+            return <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
           default:
             return <></>
         }

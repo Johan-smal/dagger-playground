@@ -1,18 +1,28 @@
 import {type  Alpine } from "alpinejs"
 
 export function formComponent (Alpine: Alpine) {
-  Alpine.data("form", (formId?: string) => ({
+  Alpine.data("form", (
+    formId?: string,
+    sortBy?: { field: string, direction: string }
+  ) => ({
     init() {
-      this.$watch("filters", (newValue, oldValue) => {
+      this.$watch("computedInputs", () => {
         this.$nextTick(() => {
           this.$refs.submit.click()
         })
       })
     },
     filters: {} as { [x: string]: { [x: string]: string | string[]}},
-    sortBy: {},
+    sortBy: sortBy as { field: string, direction: string } | null,
+    page: null as number | null,
     get computedInputs() {
       const inputs = []
+      if (this.page) {
+        inputs.push({ name: "page", value: this.page })
+      }
+      if (this.sortBy) {
+        inputs.push({ name: `sortBy[${this.sortBy.field}]`, value: this.sortBy.direction })
+      }
       for (const primary in this.filters) {
         for (const secondary in this.filters[primary]) {
           const val = this.filters[primary][secondary]
@@ -30,10 +40,20 @@ export function formComponent (Alpine: Alpine) {
     ['form']: {
       [`x-on:filters-update-${formId}.window.debounce`](filters: CustomEvent<{ [x: string]: { [x: string]: string | string[]}}>) {
         this.filters = filters.detail
+        this.page = null
+      },
+      [`x-on:page-update-${formId}.window`](page: CustomEvent<number>) {
+        this.page = page.detail
+      },
+      [`x-on:sort-update-${formId}.window`](sortBy: CustomEvent<{ field: string, direction: string }>) {
+        this.sortBy = sortBy.detail
       }
     }
   }))
-  Alpine.data("filters", (formId?: string) => ({
+  Alpine.data("filters", (
+    formId?: string, 
+    initialFilter?: { [x: string]: { [x: string]: string | string[]}}
+  ) => ({
     init(){
       this.$watch("filters", () => {
         if (formId) {
@@ -46,7 +66,7 @@ export function formComponent (Alpine: Alpine) {
     primary: null as string | null,
     secondary: null as string | null,
     values: {} as { [x: string]: null | string | string[]},
-    filters: {} as { [x: string]: { [x: string]: string | string[]}},
+    filters: initialFilter ?? {} as { [x: string]: { [x: string]: string | string[]}},
     inputFocus: false,
     // computed properties
     get computedChips() {
@@ -194,6 +214,22 @@ export function formComponent (Alpine: Alpine) {
         }
 
         this.filters = updatedFilters
+      }
+    }
+  }))
+  Alpine.data("dataTable", (formId?: string) => ({
+    formId,
+    ['sortable']: {
+      'x-on:click'() {
+        const { field, direction } = this.$el.dataset
+        if (!field || !direction) { alert("data-field/direction needs to be set for x-bind=sortable"); return }
+        this.$dispatch(`sort-update-${formId}`, { field, direction })
+      }
+    },
+    ['pagination']: {
+      'x-on:click'() {
+        const { page } = this.$el.dataset
+        this.$dispatch(`page-update-${formId}`, Number(page))
       }
     }
   }))

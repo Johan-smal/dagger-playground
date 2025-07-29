@@ -8,8 +8,31 @@ import {
   referrals,
   appointments
 } from "@/db/schema";
-import { AppointmentFilters } from "@/schemas";
-import { and, between, desc, eq, getTableColumns, gt, lt } from "drizzle-orm";
+import { AppointmentFilters, WithPaginationAndSort } from "@/schemas";
+import { and, between, desc, eq, getTableColumns, gt, lt, SQL, count, asc } from "drizzle-orm";
+import { PgColumn, PgSelect } from "drizzle-orm/pg-core";
+
+const withPagination = async  <T extends PgSelect>(
+  qb: T,
+  orderByColumn: (PgColumn | SQL | SQL.Aliased)[],
+  page = 1,
+  pageSize = 25,
+) =>  {
+  const sq = db.$with('sq').as(qb);
+  const [result, total] = await Promise.all([
+    qb.orderBy(...orderByColumn).limit(pageSize).offset((page - 1) * pageSize),
+    (await db.with(sq).select({ value: count() }).from(sq))[0].value
+  ]);
+  return {
+    data: result,
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize)
+    }
+  };
+}
 
 export const entityServices =  {
   users: {
@@ -53,8 +76,9 @@ export const entityServices =  {
   appointments: {
     index: async (
       org: typeof organizations.$inferSelect,
-      filters: AppointmentFilters = {}
+      filters: WithPaginationAndSort<AppointmentFilters> = {}
     ) => {
+      
       const qb = db.select({
           ...getTableColumns(appointments),
           email: clients.email,
@@ -63,7 +87,6 @@ export const entityServices =  {
         .from(appointments)
         .innerJoin(clients, eq(appointments.clientId, clients.id))
         .innerJoin(referrals, eq(clients.referralId, referrals.id))
-        .orderBy(desc(appointments.datetime))
         .$dynamic()
 
       const where = [
@@ -73,7 +96,31 @@ export const entityServices =  {
         filters.datetime?.between ? between(appointments.datetime, new Date(filters.datetime.between[0]), new Date(filters.datetime.between[1])) : undefined
       ]
 
-      return qb.where(and(...where))
+      const sortBy = (filters.sortBy) ? Object.entries(filters.sortBy).map(([field, direction]) => {
+        const column = ((field: string) => {
+          switch (field) {
+            case 'datetime':
+              return appointments.datetime;
+            case 'clients':
+              return clients.email;
+            case 'referrals':
+              return referrals.name;
+            default:
+              throw new Error(`Invalid sort field: ${field}`);
+          }
+        })(field);
+        if (!column) {
+          throw new Error(`Invalid sort field: ${field}`);
+        }
+        return direction === 'asc' ? asc(column) : desc(column);
+      }): [desc(appointments.datetime)];
+
+      return withPagination(
+        qb.where(and(...where)).$dynamic(),
+        sortBy,
+        filters.page,
+        filters.pageSize
+      )
     }
   }
 }

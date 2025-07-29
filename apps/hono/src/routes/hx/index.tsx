@@ -1,11 +1,10 @@
 import { Hono } from "hono";
 import { ContainerVariables } from "@/middleware/container";
 import { app as authRoutes } from "./auth";
-import { zValidator } from "@hono/zod-validator";
 import { AppointmentsTable } from "@/templates/components/entities/appointments/AppointmentsTable";
 import { jsxRenderer } from "hono/jsx-renderer";
 import { authMiddleware } from "@/middleware/auth";
-import { appointmentFiltersSchema } from "@/schemas";
+import { appointmentFiltersSchema, paginationAndSortSchema } from "@/schemas";
 import { validator } from 'hono/validator'
 import { normalizeFilters } from "@/lib/utils";
 
@@ -16,12 +15,22 @@ const appointmentRoutes = new Hono<{
   .get(
     "/",
     validator("query", async (value, _c) => {
-      console.log('value', value)
-      console.log(normalizeFilters(value))
-      return await appointmentFiltersSchema.parseAsync(normalizeFilters(value))
+      return await appointmentFiltersSchema
+        .extend(paginationAndSortSchema.shape)
+        .parseAsync(normalizeFilters(value))
     }),
     async (c) => {
-      console.log('two', c.req.valid("query"))
+      const hxPushUrl = new URLSearchParams(
+        Object.entries(c.req.queries()).flatMap(([key, value]) =>
+          Array.isArray(value)
+            ? value.map(v => [key, v])
+            : [[key, value]]
+        )
+      ).toString();
+      c.header(
+        "HX-Push-Url",
+        `?${hxPushUrl}`
+      );
       return c.render(<AppointmentsTable filters={c.req.valid("query")} />)
     }
   )

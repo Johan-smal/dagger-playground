@@ -4,12 +4,16 @@ type FilterValue = string | number | [string, string] | string[];
 
 type NormalizedFilters = Record<string, Partial<Record<FilterOperator, FilterValue>>>;
 
-export const normalizeFilters = (input: Record<string, string | string[]>): NormalizedFilters => {
-  const output: NormalizedFilters = {};
+export const normalizeFilters = (input: Record<string, string | string[]>): NormalizedFilters & Record<string, any> => {
+  const output: any = {};
 
   for (const [key, rawValue] of Object.entries(input)) {
     const match = key.match(/^(.+)\[(.+)\]$/);
-    if (!match) continue;
+    if (!match) {
+      // Copy keys without operator brackets as-is
+      output[key] = !isNaN(Number(rawValue)) && typeof rawValue === "string" ? Number(rawValue) : rawValue;
+      continue;
+    }
 
     const [, field, op] = match;
     const operator = op as FilterOperator;

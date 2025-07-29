@@ -14,6 +14,7 @@
 			"@public/*": ["./public/*"],
 			"@/*": ["./src/*"],
       "@bin/*": ["./bin/*"],
+      "@tests/*": ["./tests/*"],
 		}
   },
   "include": ["src", "bin", "tests", "public"],

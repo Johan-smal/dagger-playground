@@ -1,8 +1,7 @@
 import { getCookie } from "hono/cookie"
 import { createMiddleware } from "hono/factory"
 import { ContainerVariables } from "./container"
-import { organizations, sessions, users, usersToOrganizations } from "@/db/schema"
-import { eq, getTableColumns } from "drizzle-orm"
+import { organizations, users } from "@/db/schema"
 
 export type AuthMiddlewareVariables = ContainerVariables & { 
   user: typeof users.$inferSelect,
@@ -18,7 +17,7 @@ export const authMiddleware = createMiddleware<{ Variables: AuthMiddlewareVariab
     }
     return c.redirect('/login')
   }
-  const db = c.get("container").get("db")
+  
   const { 
     users: userService,
     organizations: orgService

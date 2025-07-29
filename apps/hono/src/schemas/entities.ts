@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 const stringDate = z.preprocess((val) => {
+  if (val instanceof Date) return val;
   if (typeof val === "string" || typeof val === "number") {
     const parsed = new Date(val);
     if (!isNaN(parsed.getTime())) return parsed;

@@ -1,6 +1,7 @@
 import { FC } from "hono/jsx"
 import { toJSONSchema, ZodObject } from "zod"
 import { Icon } from "@/templates/components/common/Icon"
+import { WithPagination, WithPaginationAndSort } from "@/schemas"
 
 type FilterInputType = {
   label?: string
@@ -20,13 +21,16 @@ type FilterSchemaJson = {
 
 export const DataTableFilter: FC<{
   formId: string,
-  schema: ZodObject
-}> = ({ schema, formId }) => {
+  schema: ZodObject,
+  filters?: WithPaginationAndSort<{}>
+}> = ({ schema, formId, filters }) => {
+  const initialFilters = schema.parse(filters ?? {});
   const json = toJSONSchema(schema, { unrepresentable: "any" }) as unknown as FilterSchemaJson
+  const xData = `filters("${formId}"${initialFilters ? `, ${JSON.stringify(initialFilters)}` : ""})`;
   return (<>
     <div
       class="relative w-fit"
-      x-data={`filters("${formId}")`}
+      x-data={xData}
     >
       <div x-bind="main">
         <button 
@@ -34,7 +38,7 @@ export const DataTableFilter: FC<{
           class="btn"
           x-bind="main_button"
         >
-          Filters <span x-text="inputFocus"></span>
+          Filters
         </button>
         <ul 
           class="menu absolute top-full left-0 bg-white border z-10"

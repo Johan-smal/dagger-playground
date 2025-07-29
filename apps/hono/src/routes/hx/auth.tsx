@@ -25,18 +25,15 @@ const app = new Hono<{
       const [firstPassword] = await db.select({ passwordHash: authKeys.passwordHash, userId: users.id })
         .from(authKeys)
         .innerJoin(users, and(eq(users.id, authKeys.userId), eq(users.email, email)))
-      const { passwordHash, userId } = firstPassword
-      if (!passwordHash) {
-        throw new Error("unauthorized")
+      if (!firstPassword || !firstPassword.passwordHash) {
+        return c.json({ error: "Unauthorized" }, 401)
       }
-
+      const { passwordHash, userId } = firstPassword
       const valid = await verifyPassword(password, passwordHash);
       if (!valid) {
-        throw new Error("unauthorized")
+        return c.json({ error: "Unauthorized" }, 401)
       }
-
       const [session] = await db.insert(sessions).values({ userId }).returning()
-
       setCookie(c, "test", `${session.id}`, {
         secure: true,
         httpOnly: true,

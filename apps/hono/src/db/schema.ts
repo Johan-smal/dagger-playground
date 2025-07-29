@@ -6,7 +6,6 @@ import {
 	timestamp,
 	serial,
 	primaryKey,
-	unique,
 	uniqueIndex
 } from "drizzle-orm/pg-core";
 

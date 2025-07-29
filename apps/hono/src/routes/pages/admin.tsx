@@ -6,6 +6,9 @@ import { authMiddleware } from "@/middleware/auth";
 import { Clients } from "@/templates/pages/admin/Clients";
 import { Referrals } from "@/templates/pages/admin/Referrals";
 import { Appointments } from "@/templates/pages/admin/Appointments";
+import { validator } from "hono/validator";
+import { appointmentFiltersSchema, paginationAndSortSchema } from "@/schemas";
+import { normalizeFilters } from "@/lib/utils";
 
 const app = new Hono<{
     Variables: ContainerVariables;
@@ -14,6 +17,15 @@ const app = new Hono<{
   .get("/", dashboardMiddleware("Dashboard"), (c) => c.render(<Dashboard />))
   .get("/clients", dashboardMiddleware("Clients"), (c) => c.render(<Clients />))
   .get("/referrals", dashboardMiddleware("Referrals"), (c) => c.render(<Referrals />))
-  .get("/appointments", dashboardMiddleware("Appointments"), (c) => c.render(<Appointments />))
+  .get(
+    "/appointments",
+    dashboardMiddleware("Appointments"),
+    validator("query", async (value, _c) => {
+      return await appointmentFiltersSchema
+        .extend(paginationAndSortSchema.shape)
+        .parseAsync(normalizeFilters(value))
+    }),
+    (c) => c.render(<Appointments filters={c.req.valid("query")} />)
+  )
   
 export { app };
